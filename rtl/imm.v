@@ -1,14 +1,10 @@
 `default_nettype none
 
-// The immediate generator is responsible for decoding the 32-bit sign-extended
-// immediate from the incoming instruction word. It is a purely combinational
-// block that is expected to be embedded in the instruction decoder.
+//Immediate Generator (IMM) Module
+//Extracts and sign-extends the immediate value from the instruction based on its format
 module imm (
-    // Input instruction word. This is used to extract the relevant immediate
-    // bits and assemble them into the final immediate.
-    input  wire [31:0] i_inst,
-    // Instruction format, determined by the instruction decoder based on the
-    // opcode. This is one-hot encoded according to the following format:
+    input  wire [31:0] i_inst,  // instruction word from which to extract the immediate
+    //One-hot encoded instruction format:
     // [0] R-type
     // [1] I-type
     // [2] S-type
@@ -16,16 +12,9 @@ module imm (
     // [4] U-type
     // [5] J-type
     input  wire [ 5:0] i_format,
-    // Output 32-bit sign-extended immediate.
-    // NOTE: Because the R-type format does not have an immediate, the output
-    // immediate can be treated as a don't-care under this case. It is included
-    // for completeness.
-    output wire [31:0] o_immediate
+    output wire [31:0] o_immediate  // sign-extended immediate based on instruction format
 );
-    // The immediate generation logic below has at least one bug. Fix the
-    // provided implementation below to generate the correct immediate values
-    // for all instruction formats. You are encouraged to make a testbench and
-    // look through waveforms as you do this.
+    // Immediate generation logic based on instruction format
     wire [31:0] imm_r = {{32{1'bx}}};
     wire [31:0] imm_i = {{21{i_inst[31]}}, i_inst[30:20]};
     wire [31:0] imm_s = {{21{i_inst[31]}}, i_inst[30:25], i_inst[11:7]};

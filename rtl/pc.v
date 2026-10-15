@@ -1,12 +1,13 @@
 `default_nettype none
 
+//Program Counter (PC) Module
 module pc #(
     parameter RESET_ADDR = 32'b0
 )(
     input wire i_clk,
-    input wire i_rst,
-    input wire [31:0] i_pc_nxt,
-    output reg [31:0] o_pc
+    input wire i_rst,               //synchronous active-high reset 
+    input wire [31:0] i_pc_nxt,     //pc_nxt determined by control logic
+    output reg [31:0] o_pc          //current value of the program counter
 );
 
     always @(posedge i_clk or posedge i_rst) begin
