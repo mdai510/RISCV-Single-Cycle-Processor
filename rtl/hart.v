@@ -7,21 +7,16 @@ module hart #(
 ) (
     input  wire        i_clk,               //global clk
     input  wire        i_rst,               //synchronous active-high reset
-    // Instruction fetch goes through a read only instruction memory (imem)
-    // port. The port accepts a 32-bit address (e.g. from the program counter)
-    // per cycle and combinationally returns a 32-bit instruction word. This
-    // is not representative of a realistic memory interface; it has been
-    // modeled as more similar to a DFF or SRAM to simplify phase 3. In
-    // later phases, you will replace this with a more realistic memory.
-    //
+    // Instruction fetch goes through a read only instruction memory (imem) port. 
+    // The port accepts a 32-bit address per cycle and combinationally returns a 32-bit instruction word. 
+    // This is not representative of a realistic memory interface; it has been modeled as more similar to a DFF or SRAM
     output wire [31:0] o_imem_raddr,        //read address for instruction memory; 4-byte aligned(LSB two bits should be zero)
     input  wire [31:0] i_imem_rdata,        //instruction word fetched from memory
-    // Data memory accesses go through a separate read/write data memory (dmem)
-    // that is shared between read (load) and write (stored). The port accepts
-    // a 32-bit address, read or write enable, and mask (explained below) each
-    // cycle. Reads are combinational - values are available immediately after
-    // updating the address and asserting read enable. Writes occur on (and
-    // are visible at) the next clock edge.
+
+    // Data memory accesses go through a separate read/write data memory (dmem) that is shared between read and write. 
+    // The port accepts a 32-bit address, read or write enable, and mask (explained below) each cycle. 
+    // Reads are combinational: values are available immediately after updating the address and asserting read enable. 
+    // Writes occur on the next clock edge.
     //
     //read/write address for the data memory; 4-byte aligned(LSB two bits should be zero)
     output wire [31:0] o_dmem_addr,        
@@ -33,32 +28,30 @@ module hart #(
     output wire        o_dmem_wen,        
     //32-bit word to write to memory; only bytes enabled by 'o_dmem_mask' will be written
     output wire [31:0] o_dmem_wdata,
-    // The dmem interface expects word (32 bit) aligned addresses. However,
-    // the processor supports byte and half-word loads and stores at unaligned and
-    // 16-bit aligned addresses, respectively. To support this, the access
-    // mask specifies which bytes within the 32-bit word are actually read
-    // from or written to memory.
+
+    // The dmem interface expects word (32 bit) aligned addresses. 
+    // However, the processor supports byte and half-word loads and stores at unaligned and 16-bit aligned addresses, respectively. 
+    //To support this, the access mask specifies which bytes within the 32-bit word are actually read from or written to memory.
     //
-    // To perform a half-word read at address 0x00001002, align `o_dmem_addr`
-    // to 0x00001000, assert `o_dmem_ren`, and set the mask to 0b1100 to
-    // indicate that only the upper two bytes should be read. Only the upper
-    // two bytes of `i_dmem_rdata` can be assumed to have valid data; to
-    // calculate the final value of the `lh[u]` instruction, shift the rdata
+    // Ex: To perform a half-word read at address 0x00001002, align `o_dmem_addr` to 0x00001000, assert `o_dmem_ren`, 
+    // and set the mask to 0b1100 to indicate that only the upper two bytes should be read. 
+    // Only the upper two bytes of `i_dmem_rdata` can be assumed to have valid data; 
+    // to calculate the final value of the `lh[u]` instruction, shift the rdata
     // word right by 16 bits and sign/zero extend as appropriate.
     //
-    // To perform a byte write at address 0x00002003, align `o_dmem_addr` to
-    // `0x00002000`, assert `o_dmem_wen`, and set the mask to 0b1000 to
-    // indicate that only the upper byte should be written. On the next clock
-    // cycle, the upper byte of `o_dmem_wdata` will be written to memory, with
-    // the other three bytes of the aligned word unaffected. Remember to shift
-    // the value of the `sb` instruction left by 24 bits to place it in the
-    // appropriate byte lane.
+    // Ex: To perform a byte write at address 0x00002003, align `o_dmem_addr` to `0x00002000`, assert `o_dmem_wen`, 
+    // and set the mask to 0b1000 to indicate that only the upper byte should be written. 
+    // On the next clock cycle, the upper byte of `o_dmem_wdata` will be written to memory, 
+    // with the other three bytes of the aligned word unaffected. 
+    // Remember to shift the value of the `sb` instruction left by 24 bits to place it in the appropriate byte lane.
     output wire [ 3:0] o_dmem_mask,
+
     // The 32-bit word read from data memory. When `o_dmem_ren` is asserted,
     // this will immediately reflect the contents of memory at the specified
-    // address, for the bytes enabled by the mask. When read enable is not
+    // address for the bytes enabled by the mask. When read enable is not
     // asserted, or for bytes not set in the mask, the value is undefined.
     input  wire [31:0] i_dmem_rdata,
+    
 	// The output `retire` interface is used to signal to the testbench that
     // the CPU has completed and retired an instruction. A single cycle
     // implementation will assert this every cycle; however, a pipelined
@@ -83,20 +76,18 @@ module hart #(
     output wire        o_retire_halt,
     // The first register address read by the instruction being retired. If
     // the instruction does not read from a register (like `lui`), this is
-    // don't-care -- the grading testbench doesn't look at it in that case.
+    // don't-care
     output wire [ 4:0] o_retire_rs1_raddr,
     // The second register address read by the instruction being retired. If
     // the instruction does not read from a second register (like `addi`),
-    // this is don't-care -- the grading testbench doesn't look at it in that
-    // case.
+    // this is don't-care.
     output wire [ 4:0] o_retire_rs2_raddr,
     // The first source register data read from the register file (in the
     // decode stage) for the instruction being retired. If rs1 is 5'd0, this
     // should also be 32'd0.
     output wire [31:0] o_retire_rs1_rdata,
     // The second source register data read from the register file (in the
-    // decode stage) for the instruction being retired. If rs2 is 5'd0, this
-    // should also be 32'd0.
+    // decode stage) for the instruction being retired.
     output wire [31:0] o_retire_rs2_rdata,
     // The destination register address written by the instruction being
     // retired. If the instruction does not write to a register (like `sw`),
@@ -156,6 +147,7 @@ module hart #(
     //register file
     wire [31:0] rs1;
     wire [31:0] rs2;
+    reg [31:0] rd_wdata;
 
     //data memory
     wire [31:0] dmem_wdata;
@@ -165,11 +157,10 @@ module hart #(
     wire [31:0] dmem_ldata;
 
     //extra
-    reg [31:0] rd_wdata;
-    wire data_misaligned;
-    wire target_misaligned;
-    wire trap;
-    wire commit;
+    wire data_misaligned;       //indicates if a data memory access is not 4-byte aligned
+    wire target_misaligned;     //indicates if a branch or jump target is not 4-byte aligned
+    wire trap;                  //indicates if a trap has occurred (illegal instruction, misaligned access)
+    wire commit;                //indicates if current instruction can be committed (asserted if a trap occurs for any reason, or if the global reset is asserted)
 
     //Module instantiation
     alu iALU(
@@ -229,7 +220,7 @@ module hart #(
         //op2
         alu_op2 = (op2_sel) ? immediate : rs2;
 
-        // pc_nxt (TODO: pull out adder and mux inputs)
+        // pc_nxt 
         case (pc_sel)
             2'b00 : pc_target = pc + 32'd4;
             2'b01 : pc_target = pc + immediate;
@@ -248,23 +239,26 @@ module hart #(
 
     assign instr = i_imem_rdata;
     assign o_imem_raddr = pc;
-    assign o_dmem_addr = {alu_result[31:2], 2'b00};
+    assign o_dmem_addr = {alu_result[31:2], 2'b00};     //word aligned address
     assign o_dmem_wdata = dmem_wdata;
     assign o_dmem_mask = dmem_mask;
-    assign o_dmem_ren = dmem_ren && commit;
+    assign o_dmem_ren = dmem_ren && commit;             //data memory accesses must only occur on valid instructions
     assign o_dmem_wen = dmem_wen && commit;
 
+    //if half-word access: check if the address is aligned to 2 bytes
+    //if word access: check if the address is aligned to 4 bytes
     assign data_misaligned = (dmem_ren || dmem_wen) &&
         (((funct3 == 3'b001 || funct3 == 3'b101) && alu_result[0]) ||
             ((funct3 == 3'b010) && (|alu_result[1:0])));
 
     assign target_misaligned =
         ((pc_sel == 2'b01) || (pc_sel == 2'b10)) && (|pc_target[1:0]);
+
     assign trap = illegal || data_misaligned || target_misaligned;
     assign commit = !i_rst && !trap;
     assign pc_nxt = pc_target;
 
-    assign o_retire_valid = !i_rst;
+    assign o_retire_valid = !i_rst;                                         //asserted every cycle for this single-cycle processor
     assign o_retire_inst = instr;
     assign o_retire_trap = trap;
     assign o_retire_halt = halt;
