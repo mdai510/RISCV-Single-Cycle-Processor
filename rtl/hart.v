@@ -1,14 +1,12 @@
 `default_nettype none
 
+//Single-cycle RISC-V hart (hardware thread) module. 
+//Implements the core datapath and control logic for instruction fetch, decode, execute, memory access, and write-back stages.
 module hart #(
-    // After reset, the program counter (PC) should be initialized to this
-    // address and start executing instructions from there.
-    parameter RESET_ADDR = 32'h00000000
+    parameter RESET_ADDR = 32'h00000000 //PC reset address
 ) (
-    // Global clock.
-    input  wire        i_clk,
-    // Synchronous active-high reset.
-    input  wire        i_rst,
+    input  wire        i_clk,               //global clk
+    input  wire        i_rst,               //synchronous active-high reset
     // Instruction fetch goes through a read only instruction memory (imem)
     // port. The port accepts a 32-bit address (e.g. from the program counter)
     // per cycle and combinationally returns a 32-bit instruction word. This
@@ -16,11 +14,8 @@ module hart #(
     // modeled as more similar to a DFF or SRAM to simplify phase 3. In
     // later phases, you will replace this with a more realistic memory.
     //
-    // 32-bit read address for the instruction memory. This is expected to be
-    // 4 byte aligned - that is, the two LSBs should be zero.
-    output wire [31:0] o_imem_raddr,
-    // Instruction word fetched from memory, available on the same cycle.
-    input  wire [31:0] i_imem_rdata,
+    output wire [31:0] o_imem_raddr,        //read address for instruction memory; 4-byte aligned(LSB two bits should be zero)
+    input  wire [31:0] i_imem_rdata,        //instruction word fetched from memory
     // Data memory accesses go through a separate read/write data memory (dmem)
     // that is shared between read (load) and write (stored). The port accepts
     // a 32-bit address, read or write enable, and mask (explained below) each
@@ -28,25 +23,15 @@ module hart #(
     // updating the address and asserting read enable. Writes occur on (and
     // are visible at) the next clock edge.
     //
-    // Read/write address for the data memory. This should be 32-bit aligned
-    // (i.e. the two LSB should be zero). See `o_dmem_mask` for how to perform
-    // half-word and byte accesses at unaligned addresses.
-    output wire [31:0] o_dmem_addr,
-    // When asserted, the memory will perform a read at the aligned address
-    // specified by `i_addr` and return the 32-bit word at that address
-    // immediately (i.e. combinationally). It is illegal to assert this and
-    // `o_dmem_wen` on the same cycle.
-    output wire        o_dmem_ren,
-    // When asserted, the memory will perform a write to the aligned address
-    // `o_dmem_addr`. When asserted, the memory will write the bytes in
-    // `o_dmem_wdata` (specified by the mask) to memory at the specified
-    // address on the next rising clock edge. It is illegal to assert this and
-    // `o_dmem_ren` on the same cycle.
-    output wire        o_dmem_wen,
-    // The 32-bit word to write to memory when `o_dmem_wen` is asserted. When
-    // write enable is asserted, the byte lanes specified by the mask will be
-    // written to the memory word at the aligned address at the next rising
-    // clock edge. The other byte lanes of the word will be unaffected.
+    //read/write address for the data memory; 4-byte aligned(LSB two bits should be zero)
+    output wire [31:0] o_dmem_addr,        
+    //read enable for the data memory; read data at 'i_dmem_rdata' is available immediately after asserting this signal
+    //illegal to assert simultaneously with `o_dmem_wen`
+    output wire        o_dmem_ren,        
+    //write enable for the data memory; write occurs on the next clock edge
+    //illegal to assert simultaneously with `o_dmem_ren`
+    output wire        o_dmem_wen,        
+    //32-bit word to write to memory; only bytes enabled by 'o_dmem_mask' will be written
     output wire [31:0] o_dmem_wdata,
     // The dmem interface expects word (32 bit) aligned addresses. However,
     // the processor supports byte and half-word loads and stores at unaligned and
@@ -133,165 +118,164 @@ module hart #(
     ,`RVFI_OUTPUTS,
 `endif
 );
-    // signal instantiation
+    //Signal instantiation
+    //PC
+    wire [31:0] pc;
+    wire [31:0] instr;
+    wire [31:0] pc_nxt;
+    reg [31:0] pc_target;
 
-        // pc
-        wire [31:0] pc;
-        wire [31:0] instr;
-        wire [31:0] pc_nxt;
-        reg [31:0] pc_target;
+    //ALU
+    wire [2:0] alu_opsel;
+    wire alu_sub;
+    wire alu_unsigned;
+    wire alu_arith;
+    reg [31:0] alu_op1;
+    reg [31:0] alu_op2;
+    wire [31:0] alu_result;
+    wire alu_eq;
+    wire alu_slt;
 
-        // alu
-        wire [2:0] alu_opsel;
-        wire alu_sub;
-        wire alu_unsigned;
-        wire alu_arith;
-        reg [31:0] alu_op1;
-        reg [31:0] alu_op2;
-        wire [31:0] alu_result;
-        wire alu_eq;
-        wire alu_slt;
+    //control
+    wire [5:0] format;
+    wire dmem_ren;
+    wire dmem_wen;
+    wire rf_wen;
+    wire [1:0] rd_wsel;
+    wire [1:0] op1_sel;
+    wire op2_sel;
+    wire [1:0] pc_sel;
+    wire illegal;
+    wire halt;
 
-        // control
-        wire [5:0] format;
-        wire dmem_ren;
-        wire dmem_wen;
-        wire rf_wen;
-        wire [1:0] rd_wsel;
-        wire [1:0] op1_sel;
-        wire op2_sel;
-        wire [1:0] pc_sel;
-        wire illegal;
-        wire halt;
+    wire [2:0] funct3 = instr[14:12];
 
-        wire [2:0] funct3 = instr[14:12];
+    //immediate generator
+    wire [31:0] immediate;
 
-        // immediate generator
-        wire [31:0] immediate;
+    //register file
+    wire [31:0] rs1;
+    wire [31:0] rs2;
 
-        // register file
-        wire [31:0] rs1;
-        wire [31:0] rs2;
+    //data memory
+    wire [31:0] dmem_wdata;
+    wire [3:0] dmem_mask;
 
-        // data memory
-        wire [31:0] dmem_wdata;
-        wire [3:0] dmem_mask;
+    //data load extend
+    wire [31:0] dmem_ldata;
 
-        // data load extend
-        wire [31:0] dmem_ldata;
+    //extra
+    reg [31:0] rd_wdata;
+    wire data_misaligned;
+    wire target_misaligned;
+    wire trap;
+    wire commit;
 
-        // extra
-        reg [31:0] rd_wdata;
-        wire data_misaligned;
-        wire target_misaligned;
-        wire trap;
-        wire commit;
+    //Module instantiation
+    alu iALU(
+        .i_opsel(alu_opsel), .i_sub(alu_sub), .i_unsigned(alu_unsigned), .i_arith(alu_arith), .i_op1(alu_op1), .i_op2(alu_op2),
+        .o_result(alu_result), .o_eq(alu_eq), .o_slt(alu_slt)
+    );
 
-    // module instantiation
-        alu iALU(
-            .i_opsel(alu_opsel), .i_sub(alu_sub), .i_unsigned(alu_unsigned), .i_arith(alu_arith), .i_op1(alu_op1), .i_op2(alu_op2),
-            .o_result(alu_result), .o_eq(alu_eq), .o_slt(alu_slt)
-        );
+    control iControlUnit(
+        .i_instr(instr), .i_alu_eq(alu_eq), .i_alu_slt(alu_slt),
+        .o_format(format), .o_op1_sel(op1_sel), .o_op2_sel(op2_sel),
+        .o_alu_opsel(alu_opsel), .o_alu_sub(alu_sub), .o_alu_arith(alu_arith),
+        .o_alu_unsigned(alu_unsigned), .o_rf_wen(rf_wen), .o_rd_wsel(rd_wsel),
+        .o_dmem_ren(dmem_ren), .o_dmem_wen(dmem_wen), .o_pc_sel(pc_sel),
+        .o_halt(halt), .o_illegal(illegal)
+    );
 
-        control iControlUnit(
-            .i_instr(instr), .i_alu_eq(alu_eq), .i_alu_slt(alu_slt),
-            .o_format(format), .o_op1_sel(op1_sel), .o_op2_sel(op2_sel),
-            .o_alu_opsel(alu_opsel), .o_alu_sub(alu_sub), .o_alu_arith(alu_arith),
-            .o_alu_unsigned(alu_unsigned), .o_rf_wen(rf_wen), .o_rd_wsel(rd_wsel),
-            .o_dmem_ren(dmem_ren), .o_dmem_wen(dmem_wen), .o_pc_sel(pc_sel),
-            .o_halt(halt), .o_illegal(illegal)
-        );
+    pc #(.RESET_ADDR(RESET_ADDR)) iProgramCounter(
+        .i_clk(i_clk), .i_rst(i_rst), .i_pc_nxt(pc_nxt),
+        .o_pc(pc)
+    );
 
-        pc #(.RESET_ADDR(RESET_ADDR)) iProgramCounter(
-            .i_clk(i_clk), .i_rst(i_rst), .i_pc_nxt(pc_nxt),
-            .o_pc(pc)
-        );
+    rf #(.BYPASS_EN(0)) iRegisterFile(
+        .i_clk(i_clk), .i_rst(i_rst),
+        .i_rs1_raddr(instr[19:15]), .o_rs1_rdata(rs1),
+        .i_rs2_raddr(instr[24:20]), .o_rs2_rdata(rs2),
+        .i_rd_wen(rf_wen && commit), .i_rd_waddr(instr[11:7]), .i_rd_wdata(rd_wdata)
+    );
 
-        rf #(.BYPASS_EN(0)) iRegisterFile(
-            .i_clk(i_clk), .i_rst(i_rst),
-            .i_rs1_raddr(instr[19:15]), .o_rs1_rdata(rs1),
-            .i_rs2_raddr(instr[24:20]), .o_rs2_rdata(rs2),
-            .i_rd_wen(rf_wen && commit), .i_rd_waddr(instr[11:7]), .i_rd_wdata(rd_wdata)
-        );
+    imm iImmediateGenerator(
+        .i_inst(instr), .i_format(format), .o_immediate(immediate)
+    );
 
-        imm iImmediateGenerator(
-            .i_inst(instr), .i_format(format), .o_immediate(immediate)
-        );
+    dsr iDataStoreAlign(
+        .i_rs2(rs2), .i_byte_offset(alu_result[1:0]),
+        .i_funct3(funct3), .o_wdata(dmem_wdata)
+    );
 
-        dsr iDataStoreAlign(
-            .i_rs2(rs2), .i_byte_offset(alu_result[1:0]),
-            .i_funct3(funct3), .o_wdata(dmem_wdata)
-        );
+    maskgen iMaskGenerator(
+        .i_byte_offset(alu_result[1:0]), .i_funct3(funct3), .o_mask(dmem_mask)
+    );
 
-        maskgen iMaskGenerator(
-            .i_byte_offset(alu_result[1:0]), .i_funct3(funct3), .o_mask(dmem_mask)
-        );
+    dle iDataLoadExtend(
+        .i_rdata(i_dmem_rdata), .i_byte_offset(alu_result[1:0]),
+        .i_funct3(funct3), .o_ldata(dmem_ldata)
+    );
 
-        dle iDataLoadExtend(
-            .i_rdata(i_dmem_rdata), .i_byte_offset(alu_result[1:0]),
-            .i_funct3(funct3), .o_ldata(dmem_ldata)
-        );
+    //Wiring
+    //Muxes
+    always @(*) begin
+        //op1
+        case (op1_sel)
+            2'b00 : alu_op1 = rs1;
+            2'b01 : alu_op1 = pc;
+            2'b10 : alu_op1 = 32'd0;
+            default : alu_op1 = 32'bx;
+        endcase
+        //op2
+        alu_op2 = (op2_sel) ? immediate : rs2;
 
-    // wiring
-        always @(*) begin
-            // op1
-            case (op1_sel)
-                2'b00 : alu_op1 = rs1;
-                2'b01 : alu_op1 = pc;
-                2'b10 : alu_op1 = 32'd0;
-                default : alu_op1 = 32'bx;
-            endcase
+        // pc_nxt (TODO: pull out adder and mux inputs)
+        case (pc_sel)
+            2'b00 : pc_target = pc + 32'd4;
+            2'b01 : pc_target = pc + immediate;
+            2'b10 : pc_target = {alu_result[31:1], 1'b0};
+            default : pc_target = 32'bx;
+        endcase
 
-            // op2
-            alu_op2 = (op2_sel) ? immediate : rs2;
+        // rd_wdata
+        case (rd_wsel)
+            2'b00 : rd_wdata = alu_result;
+            2'b01 : rd_wdata = dmem_ldata;
+            2'b10 : rd_wdata = pc + 32'd4;
+            default : rd_wdata = 32'bx;
+        endcase
+    end
 
-            // pc_nxt (TODO: pull out adder and mux inputs)
-            case (pc_sel)
-                2'b00 : pc_target = pc + 32'd4;
-                2'b01 : pc_target = pc + immediate;
-                2'b10 : pc_target = {alu_result[31:1], 1'b0};
-                default : pc_target = 32'bx;
-            endcase
+    assign instr = i_imem_rdata;
+    assign o_imem_raddr = pc;
+    assign o_dmem_addr = {alu_result[31:2], 2'b00};
+    assign o_dmem_wdata = dmem_wdata;
+    assign o_dmem_mask = dmem_mask;
+    assign o_dmem_ren = dmem_ren && commit;
+    assign o_dmem_wen = dmem_wen && commit;
 
-            // rd_wdata
-            case (rd_wsel)
-                2'b00 : rd_wdata = alu_result;
-                2'b01 : rd_wdata = dmem_ldata;
-                2'b10 : rd_wdata = pc + 32'd4;
-                default : rd_wdata = 32'bx;
-            endcase
-        end
+    assign data_misaligned = (dmem_ren || dmem_wen) &&
+        (((funct3 == 3'b001 || funct3 == 3'b101) && alu_result[0]) ||
+            ((funct3 == 3'b010) && (|alu_result[1:0])));
 
-        assign instr = i_imem_rdata;
-        assign o_imem_raddr = pc;
-        assign o_dmem_addr = {alu_result[31:2], 2'b00};
-        assign o_dmem_wdata = dmem_wdata;
-        assign o_dmem_mask = dmem_mask;
-        assign o_dmem_ren = dmem_ren && commit;
-        assign o_dmem_wen = dmem_wen && commit;
+    assign target_misaligned =
+        ((pc_sel == 2'b01) || (pc_sel == 2'b10)) && (|pc_target[1:0]);
+    assign trap = illegal || data_misaligned || target_misaligned;
+    assign commit = !i_rst && !trap;
+    assign pc_nxt = pc_target;
 
-        assign data_misaligned = (dmem_ren || dmem_wen) &&
-            (((funct3 == 3'b001 || funct3 == 3'b101) && alu_result[0]) ||
-             ((funct3 == 3'b010) && (|alu_result[1:0])));
-
-        assign target_misaligned =
-            ((pc_sel == 2'b01) || (pc_sel == 2'b10)) && (|pc_target[1:0]);
-        assign trap = illegal || data_misaligned || target_misaligned;
-        assign commit = !i_rst && !trap;
-        assign pc_nxt = pc_target;
-
-        assign o_retire_valid = !i_rst;
-        assign o_retire_inst = instr;
-        assign o_retire_trap = trap;
-        assign o_retire_halt = halt;
-        assign o_retire_rs1_raddr = instr[19:15];
-        assign o_retire_rs2_raddr = instr[24:20];
-        assign o_retire_rs1_rdata = rs1;
-        assign o_retire_rs2_rdata = rs2;
-        assign o_retire_rd_waddr = (rf_wen && commit) ? instr[11:7] : 5'd0;
-        assign o_retire_rd_wdata = rd_wdata;
-        assign o_retire_pc = pc;
-        assign o_retire_next_pc = pc_nxt;
+    assign o_retire_valid = !i_rst;
+    assign o_retire_inst = instr;
+    assign o_retire_trap = trap;
+    assign o_retire_halt = halt;
+    assign o_retire_rs1_raddr = instr[19:15];
+    assign o_retire_rs2_raddr = instr[24:20];
+    assign o_retire_rs1_rdata = rs1;
+    assign o_retire_rs2_rdata = rs2;
+    assign o_retire_rd_waddr = (rf_wen && commit) ? instr[11:7] : 5'd0;
+    assign o_retire_rd_wdata = rd_wdata;
+    assign o_retire_pc = pc;
+    assign o_retire_next_pc = pc_nxt;
 endmodule
 
 `default_nettype wire

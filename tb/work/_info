@@ -1,0 +1,231 @@
+m255
+K4
+z2
+!s11f vlog 2020.1 2020.02, Feb 28 2020
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dC:/Users/maxda/Downloads/ECE552/Projects/p3_personal/RISCV-Single-Cycle-Processor/tb
+valu
+Z1 !s110 1792361685
+!i10b 1
+!s100 z3`[EO[GBK4A5EL_I]VDC3
+Z2 !s11b Dg1SIo80bB@j0V0VzS_@n1
+IZ=4@<@OFM[Og1@<RPS1[30
+Z3 VDg1SIo80bB@j0V0VzS_@n1
+R0
+w1792361033
+8../rtl/alu.v
+F../rtl/alu.v
+!i122 0
+L0 4 74
+Z4 OV;L;2020.1;71
+r1
+!s85 0
+31
+Z5 !s108 1792361685.000000
+!s107 tb.v|../rtl/rf.v|../rtl/pc.v|../rtl/maskgen.v|../rtl/imm.v|../rtl/hart.v|../rtl/dsr.v|../rtl/dle.v|../rtl/control.v|../rtl/alu.v|
+Z6 !s90 -reportprogress|300|../rtl/alu.v|../rtl/control.v|../rtl/dle.v|../rtl/dsr.v|../rtl/hart.v|../rtl/imm.v|../rtl/maskgen.v|../rtl/pc.v|../rtl/rf.v|tb.v|
+!i113 1
+Z7 tCvgOpt 0
+vcontrol
+R1
+!i10b 1
+!s100 FbVmcWV4i2CCJQLJoga2n3
+R2
+I]A?V2?idDcQM3P@1W6:Bo1
+R3
+R0
+w1792039611
+8../rtl/control.v
+F../rtl/control.v
+!i122 0
+L0 4 113
+R4
+r1
+!s85 0
+31
+R5
+Z8 !s107 tb.v|../rtl/rf.v|../rtl/pc.v|../rtl/maskgen.v|../rtl/imm.v|../rtl/hart.v|../rtl/dsr.v|../rtl/dle.v|../rtl/control.v|../rtl/alu.v|
+R6
+!i113 1
+R7
+vdle
+R1
+!i10b 1
+!s100 bR:49=JSTaoHjaii>I]Gd2
+R2
+IoE`dBf^onRnaa1SMFCX@k3
+R3
+R0
+w1792042843
+8../rtl/dle.v
+F../rtl/dle.v
+!i122 0
+L0 6 30
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
+vdsr
+R1
+!i10b 1
+!s100 2;UCjPi9GhoQ<JIkzTJl;0
+R2
+IjczlBVc;nCz>Q^^2ZmPXH0
+R3
+R0
+w1792354610
+8../rtl/dsr.v
+F../rtl/dsr.v
+!i122 0
+L0 7 24
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
+vhart
+R1
+!i10b 1
+!s100 VQ7DaMhYNXMN_aENQj82H3
+R2
+I3LPY4NdB790M0md>lmTUl3
+R3
+R0
+w1792169634
+8../rtl/hart.v
+F../rtl/hart.v
+!i122 0
+L0 5 275
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
+vhart_tb
+R1
+!i10b 1
+!s100 @;>=?<PKQB7Jod9WS2O2Q1
+R2
+IS>Nam<0cbWTDnK7Z]LH:>3
+R3
+R0
+w1792028294
+8tb.v
+Ftb.v
+!i122 0
+L0 1 143
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
+vimm
+R1
+!i10b 1
+!s100 J@l7cl:8J=U0zWPB9AISk3
+R2
+IbZkdW8chK7ldj18UdjCoU0
+R3
+R0
+w1792043198
+8../rtl/imm.v
+F../rtl/imm.v
+!i122 0
+L0 5 34
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
+vmaskgen
+R1
+!i10b 1
+!s100 IRA:CnLkcgj7nAQ;B7]C@3
+R2
+ITFTV?2ehhkza<glK1YHE?3
+R3
+R0
+w1792043994
+8../rtl/maskgen.v
+F../rtl/maskgen.v
+!i122 0
+L0 5 19
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
+vpc
+R1
+!i10b 1
+!s100 1mK9XOglG677A0o<K@=fJ2
+R2
+IHD88YN:W4]3O_C4NL2Xj>0
+R3
+R0
+w1792043388
+8../rtl/pc.v
+F../rtl/pc.v
+!i122 0
+L0 4 18
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
+vrf
+R1
+!i10b 1
+!s100 zMhY7dR`8FGgSncPI<EeX3
+R2
+IcW:mfGB=BC[;Y=]kC[5cd1
+R3
+R0
+w1792361431
+8../rtl/rf.v
+F../rtl/rf.v
+!i122 0
+L0 7 47
+R4
+r1
+!s85 0
+31
+R5
+R8
+R6
+!i113 1
+R7
