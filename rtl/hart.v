@@ -194,7 +194,7 @@ module hart #(
     );
 
     dsr iDataStoreAlign(
-        .i_rs2(rs2), .i_byte_offset(alu_result[1:0]),
+        .i_rs2(rs2),
         .i_funct3(funct3), .o_wdata(dmem_wdata)
     );
 
