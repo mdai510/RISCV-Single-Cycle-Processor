@@ -1,10 +1,9 @@
 `default_nettype none
 
 //Data Store Replication (DSR) Module
-//misnomer from previous implementation,
-//this module shifts the data to align with the byte offset within the word
-//ex if storing a byte at offset 1, it will be shifted left by 8 bits within the 32-bit word
-//for half-word at offset 1, it will be shifted left by 16 bits within the 32-bit word
+//this module replicates the appropriate byte/half-word across the whole 32-bit word for store operations
+//ex if storing a byte, it will be replicated 4 times to fill the 32-bit word
+//for half-word, it will be replicated 2 times
 module dsr (
     input wire [31:0] i_rs2,            //data to be stored
     input wire [2:0] i_funct3,          //determines the type of store
