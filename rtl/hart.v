@@ -193,7 +193,7 @@ module hart #(
         .i_inst(instr), .i_format(format), .o_immediate(immediate)
     );
 
-    dsr iDataStoreAlign(
+    dsr iDataStoreReplicate(
         .i_rs2(rs2),
         .i_funct3(funct3), .o_wdata(dmem_wdata)
     );
